@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Space Invaders Básico</title>
+<style>
+  canvas {
+    display: block;
+    background-color: #000;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+// Obtener el elemento canvas y el contexto
+var canvas = document.getElementById('gameCanvas');
+var ctx = canvas.getContext('2d');
+
+
+var enemigos = [];
+var cantidadEnemigos = 10;
+var anchoEnemigo = 40;
+var altoEnemigo = 20;
+var espacioEntreEnemigos = 20;
+
+// Crear enemigos y posicionarlos en la parte superior del canvas
+function crearEnemigos() {
+  for(var i = 0; i < cantidadEnemigos; i++) {
+    enemigos.push({
+      x: i * (anchoEnemigo + espacioEntreEnemigos),
+      y: espacioEntreEnemigos,
+      ancho: anchoEnemigo,
+      alto: altoEnemigo,
+      velocidad: 1,
+      dibujar: function() {
+        ctx.fillStyle = '#f00';
+        ctx.fillRect(this.x, this.y, this.ancho, this.alto);
+      },
+      mover: function() {
+        this.x += this.velocidad;
+        // Cambiar la dirección si el enemigo toca el borde del canvas
+        if(this.x > canvas.width - this.ancho || this.x < 0) {
+          this.velocidad *= -1;
+          this.y += this.alto * 2; // Mover hacia abajo al cambiar de dirección
+        }
+      }
+    });
+  }
+}
+
+
+// Definir el jugador
+var jugador = {
+  x: canvas.width / 2,
+  y: canvas.height - 30,
+  ancho: 50,
+  alto: 30,
+  velocidad: 5,
+  dibujar: function() {
+    ctx.fillStyle = '#0f0';
+    ctx.fillRect(this.x, this.y, this.ancho, this.alto);
+  },
+  mover: function(direccion) {
+    if(direccion === 'izquierda' && this.x > 0) {
+      this.x -= this.velocidad;
+    } else if(direccion === 'derecha' && this.x < canvas.width - this.ancho) {
+      this.x += this.velocidad;
+    }
+    this.dibujar();
+  }
+};
+// Definir las balas del jugador
+var balasJugador = [];
+
+// Función para disparar
+function disparar() {
+  balasJugador.push({
+    x: jugador.x + jugador.ancho / 2,
+    y: jugador.y,
+    ancho: 5,
+    alto: 10,
+    velocidad: -7,
+    dibujar: function() {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(this.x, this.y, this.ancho, this.alto);
+    },
+    mover: function() {
+      this.y += this.velocidad;
+    }
+  });
+}
+
+// Evento de teclado para disparar
+document.addEventListener('keydown', function(evento) {
+  if(evento.key === ' ') { // Espacio para disparar
+    disparar();
+  }
+});
+
+// Definir las balas de los enemigos
+var balasEnemigos = [];
+
+// Función para que los enemigos disparen
+function enemigoDispara(enemigo) {
+  balasEnemigos.push({
+    x: enemigo.x + enemigo.ancho / 2,
+    y: enemigo.y + enemigo.alto,
+    ancho: 5,
+    alto: 10,
+    velocidad: 30,
+    dibujar: function() {
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(this.x, this.y, this.ancho, this.alto);
+    },
+    mover: function() {
+      this.y += this.velocidad;
+    }
+  });
+}
+// Asumiendo que tienes una función llamada 'disparoEnemigo' que maneja el disparo de un enemigo
+function iniciarDisparosEnemigos() {
+  setInterval(() => {
+    // Selecciona un enemigo al azar para disparar
+    const enemigoAleatorio = enemigos[Math.floor(Math.random() * enemigos.length)];
+    enemigoDispara(enemigoAleatorio);
+  }, 100); // Ajusta el intervalo de tiempo según lo desees
+}
+
+// Añade esta línea en alguna parte de tu código de inicialización
+
+
+// Para el jugador, puedes añadir un event listener al documento para detectar la tecla presionada
+document.addEventListener('keydown', (event) => {
+  const tecla = event.key;
+  if (tecla === 'Espacio' || tecla === ' ') { // Puedes cambiar 'Espacio' por la tecla que prefieras
+    disparoJugador();
+  }
+});
+
+function detectarColisiones() {
+  balasJugador.forEach(function(bala, indexBala) {
+    enemigos.forEach(function(enemigo, indexEnemigo) {
+      if(bala.x < enemigo.x + enemigo.ancho &&
+         bala.x + bala.ancho > enemigo.x &&
+         bala.y < enemigo.y + enemigo.alto &&
+         bala.y + bala.alto > enemigo.y) {
+        // Eliminar enemigo y bala
+        enemigos.splice(indexEnemigo, 1);
+        balasJugador.splice(indexBala, 1);
+      }
+    });
+  });
+
+  balasEnemigos.forEach(function(bala, indexBala) {
+    if(bala.x < jugador.x + jugador.ancho &&
+       bala.x + bala.ancho > jugador.x &&
+       bala.y < jugador.y + jugador.alto &&
+       bala.y + bala.alto > jugador.y) {
+      // Eliminar bala y terminar juego o restar vida
+      balasEnemigos.splice(indexBala, 1);
+      // Aquí puedes poner código para terminar el juego o restar una vida
+    }
+  });
+}
+
+// Función para dibujar el juego
+function dibujar() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  jugador.dibujar();
+  // Dibujar enemigos
+  enemigos.forEach(function(enemigo) {
+    enemigo.dibujar();
+    enemigo.mover();
+  });
+}
+
+
+// Eventos de teclado
+document.addEventListener('keydown', function(evento) {
+  if(evento.key === 'ArrowLeft') {
+    jugador.mover('izquierda');
+  } else if(evento.key === 'ArrowRight') {
+    jugador.mover('derecha');
+  }
+});
+
+// Bucle del juego
+function actualizarJuego() {
+  dibujar();
+  iniciarDisparosEnemigos();
+  detectarColisiones();
+  requestAnimationFrame(actualizarJuego);
+}
+
+// Iniciar el juego
+crearEnemigos();
+actualizarJuego();
+
+</script>
+</body>
+</html>
